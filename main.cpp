@@ -61,10 +61,11 @@ uberzahl montMultiply(uberzahl a, uberzahl b, uberzahl R, uberzahl n){
 	uberzahl aBar = a*R % n;
 	uberzahl bBar = b*R % n;
 
-	uberzahl t = aBar*bBar;
-	uberzahl u = R.inverse(n)*((t+(t*n.inverse(R))*n)/R) % n;
+	uberzahl zBar = (aBar*bBar*R.inverse(n)) % n;
+	uberzahl z = (zBar*R.inverse(n)) % n;
 
-	return (u); 
+
+	return (z); 
 
 
 }
@@ -80,7 +81,7 @@ uberzahl origMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	uberzahl two = 2;
 
 	uberzahl R = 2;
-	R = two.exp(n.bitLength());
+	R = two.exp(n.bitLength()) % n;
 	
 
 	for(unsigned int i = 0; i < numBits; i++){
