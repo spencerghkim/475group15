@@ -56,13 +56,20 @@ uberzahl chineseModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	return m;
 }
 
-//*******not done*******
 uberzahl montMultiply(uberzahl a, uberzahl b, uberzahl R, uberzahl n){
 	uberzahl aBar = a*R % n;
 	uberzahl bBar = b*R % n;
 
-	uberzahl zBar = (aBar*bBar*R.inverse(n)) % n;
-	uberzahl z = (zBar*R.inverse(n)) % n;
+	//Montgomery Reduction**
+	uberzahl k = n.bitLength();
+	uberzahl m = (k*((aBar*bBar)%R)) % R;
+	uberzahl t = ((aBar*bBar) + m*(aBar*bBar))/R;
+
+	if (t >= (aBar*bBar))
+		t = t-(aBar*bBar);
+	//*************
+
+	uberzahl z = (t*R.inverse(n)) % n;
 
 
 	return (z); 
