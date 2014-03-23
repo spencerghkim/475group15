@@ -110,7 +110,8 @@ private:
 	uberzahl NPrime;							//N' = -N^-1 mod R
 	uberzahl m, t;								//temp variables
 	inline void ReduceZ(){
-		m = (z*NPrime) % R;
+		// m = (z*NPrime) % R;
+		m = (z*NPrime) & (( (uberzahl)1 << (R.bitLength()-1) )-(uberzahl)1);
 		t = (z + m*N) >> (R.bitLength()-1);
 		if(t >= N) 
 			z = (t-N);
@@ -134,17 +135,24 @@ public:
 	}
 	inline void squareZ(){ 						//z = z*z mod n = (z*z*RInv) % N;
 		z = z*z;
-		z = (z*RInv) % N;
 		ReduceZ();
 	}
 	inline uberzahl Red(){ 						//returns Red(z) = (z*RInv) % N;
-		m = (z*NPrime) % R;			
+		// m = (z*NPrime) % R;			
+		m = (z*NPrime) & (( (uberzahl)1 << (R.bitLength()-1) )-(uberzahl)1);
 		t = (z + m*N) >> (R.bitLength()-1);	
 		
 		if(t >= N) return (t-N);
 		else return (t);
 	}
 	
+};
+
+class Montgomery{
+private:
+
+public:
+
 };
 
 uberzahl origMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
@@ -209,12 +217,16 @@ int main(int argc, char** argv)
 	uberzahl q = 11;
 	uberzahl a = 20;
 	uberzahl c = 8;
+	p=31;
+	q=37;
+	a=24;
+	c=61;
 
 	uberzahl result = 1, result2, result3, result4;
 
 	// result = originalModExp(c,a,p,q);
 	// std::cout << "original: " << result << "\n";
-	// result = chineseModExp(c,a,p,q);
+	// result = chineseModExp2(c,a,p,q);
 	// std::cout << "chinese: " << result << "\n";
 	// result = origMont(c,a,p,q);
 	// std::cout << "origMont: " << result << "\n";
@@ -262,9 +274,9 @@ int main(int argc, char** argv)
 	else{
 		cout << "Answers not all same...\n";
 		cout << "original: " << result << "\n";
-		cout << "chinese2: " << result << "\n";
-		cout << "origMont: " << result << "\n";
-		cout << "chinMont: " << result << "\n";
+		cout << "chinese2: " << result2 << "\n";
+		cout << "origMont: " << result3 << "\n";
+		cout << "chinMont: " << result4 << "\n";
 	}
 
 
