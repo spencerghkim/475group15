@@ -11,7 +11,7 @@ OFILES = ProcessData.o pager.o vm_pager.o
 HEADERS = pager.h ProcessData.h VirtualPage.h vm_pager.h 
 TESTHEADERS = libvm_app.a -ldl
 
-all: main main2
+all: main2
 
 debug: FLAGS += -g
 debug: all

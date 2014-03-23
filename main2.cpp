@@ -9,6 +9,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <cassert>
+#include <random>
 #include <chrono>
 #include "uberzahl.h"
 
@@ -43,14 +45,14 @@ uberzahl originalModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 		auto current = chrono::steady_clock::now();
 		auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
 		double chrono_time = elapsed.count();
-		cerr << "SqMultOrig time: " << chrono_time << "\n"; 
+		cerr << "\tSqMultOrig time: " << chrono_time << "\n"; 
 	}
 
 	return z;
 }
 
 
-uberzahl chineseModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
+uberzahl chineseModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){ //unused
 	//a^c mod pq
 	auto start = chrono::steady_clock::now();
 
@@ -68,13 +70,14 @@ uberzahl chineseModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	auto current = chrono::steady_clock::now();
 	auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
 	double chrono_time = elapsed.count();
-	cerr << "SqMult_CRT time: " << chrono_time << "\n"; 
+	cerr << "\tSqMult_CRT time: " << chrono_time << "\n"; 
     
 	return m;
 }
 
-uberzahl chineseModExp2(uberzahl c, uberzahl a, uberzahl p, uberzahl q){ //unused
+uberzahl chineseModExp2(uberzahl c, uberzahl a, uberzahl p, uberzahl q){ 
 	//a^c mod pq
+	auto start = chrono::steady_clock::now();
 	
 	uberzahl dp = c % (p-1);
 	uberzahl dq = c % (q-1);
@@ -86,6 +89,11 @@ uberzahl chineseModExp2(uberzahl c, uberzahl a, uberzahl p, uberzahl q){ //unuse
 	uberzahl m2 = originalModExp(dq,a,q,1);
     
 	uberzahl m = (m1*q*T + m2*p*S) % (p*q);
+
+	auto current = chrono::steady_clock::now();
+	auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
+	double chrono_time = elapsed.count();
+	cerr << "\tSqMult_CRT time: " << chrono_time << "\n"; 
     
 	return m;
 }
@@ -100,33 +108,43 @@ private:
 	uberzahl aBar; 								//base => aBar
 	uberzahl z; 								//result in monty land
 	uberzahl NPrime;							//N' = -N^-1 mod R
+	uberzahl m, t;								//temp variables
+	inline void ReduceZ(){
+		m = (z*NPrime) % R;
+		t = (z + m*N) >> (R.bitLength()-1);
+		if(t >= N) 
+			z = (t-N);
+		else 
+			z = (t);
+	}
 public:
 	mont(uberzahl a, uberzahl n){
 		N = n;
-		R = ((uberzahl)2).exp(N.bitLength()) % N;
+		R = ((uberzahl)2) << (N.bitLength()-1);
+		assert(R > N);
 		RInv = R.inverse(N);
 
 		aBar = (a*R)%N; 						//a = a*R mod N
 		z = R % N; 								//z=1*R mod N
 		NPrime = R - N.inverse(R);
 	}
-	inline void MM_za(){ 						//z = MM(z,a)
-		z = (z*aBar*RInv) % N;		//can use fast-Red instead... we should be calling Red on every multiply. 
+	inline void MM_za(){ 						//z = MM(z,a) = (z*aBar*RInv) % N;
+		z = z*aBar;
+		ReduceZ();
 	}
-	inline void squareZ(){ 						//z = z*z mod n
-		z = (z*z*RInv) % N;
+	inline void squareZ(){ 						//z = z*z mod n = (z*z*RInv) % N;
+		z = z*z;
+		z = (z*RInv) % N;
+		ReduceZ();
 	}
-	inline uberzahl Red(){ 						//returns Red(z)
-		uberzahl m = (z*NPrime) % R;			
-		uberzahl t = (z + m*N)/R;	//can speed up with bit shifts!!!!!!!!
-		if(t >= N) 
-			return (t-N);
-		else 
-			return (t);
-
-		return (z*RInv) % N;
+	inline uberzahl Red(){ 						//returns Red(z) = (z*RInv) % N;
+		m = (z*NPrime) % R;			
+		t = (z + m*N) >> (R.bitLength()-1);	
+		
+		if(t >= N) return (t-N);
+		else return (t);
 	}
-
+	
 };
 
 uberzahl origMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
@@ -152,7 +170,7 @@ uberzahl origMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 		auto current = chrono::steady_clock::now();
 		auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
 		double chrono_time = elapsed.count();
-		cerr << "MontyOrig time: " << chrono_time << "\n"; 
+		cerr << "\tMonty_Orig time: " << chrono_time << "\n"; 
 	}
 
 	return Monty.Red();
@@ -166,17 +184,17 @@ uberzahl chinMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	uberzahl dq = c % (q-1);
 
 	uberzahl T = q.inverse(p);
+	uberzahl S = p.inverse(q);
 
 	uberzahl m1 = origMont(dp,a,p,1);
 	uberzahl m2 = origMont(dq,a,q,1);
     
-	uberzahl u = ((m1-m2)*T) % p;
-	uberzahl m = m2 + u*q;
+	uberzahl m = (m1*q*T + m2*p*S) % (p*q);
 
 	auto current = chrono::steady_clock::now();
 	auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
 	double chrono_time = elapsed.count();
-	cerr << "MontyCRT time: " << chrono_time << "\n"; 
+	cerr << "\tMonty &CRT time: " << chrono_time << "\n"; 
     
 	return m;
 }
@@ -192,24 +210,65 @@ int main(int argc, char** argv)
 	uberzahl a = 20;
 	uberzahl c = 8;
 
-	uberzahl result = 1;
-    
+	uberzahl result = 1, result2, result3, result4;
+
+	// result = originalModExp(c,a,p,q);
+	// std::cout << "original: " << result << "\n";
+	// result = chineseModExp(c,a,p,q);
+	// std::cout << "chinese: " << result << "\n";
+	// result = origMont(c,a,p,q);
+	// std::cout << "origMont: " << result << "\n";
+	// result = chinMont(c,a,p,q);
+	// std::cout << "chinMont: " << result << "\n";
+
+
+
+	if(argc != 2){
+		cerr << "usage: ./main2.out bitSize\n";
+		exit(1);
+	}
+
+	int bitSize = atoi(argv[1]);
+	srand(time(0));
+
+	cout << "\ngenerating primes...\n";
+	auto start = chrono::steady_clock::now();
+
+	//generate random number of bitSize/2 bits
+	uberzahl r = random((uberzahl)1 << ((bitSize/2)-1), (uberzahl)1 << ((bitSize/2)));
+
+	//generate p and q
+	p = nextprime(r, 50);
+	q = nextprime(p+1, 50);
+	cout << "\tp: " << p << " " << "q: " << q << "\n";
+
+	//generate a and c
+	a = random((uberzahl) 2, (uberzahl)1 << (bitSize-2));
+	c = random((uberzahl) 2, (uberzahl)1 << (bitSize-4));
+	cout << "\ta: " << a << " " << "c: " << c << "\n";
+
+		auto current = chrono::steady_clock::now();
+		auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
+		double chrono_time = elapsed.count();
+	cout << "done generating primes! Took " << chrono_time << " seconds...\n";
+
 	result = originalModExp(c,a,p,q);
-    std::cout << "original: " << result << "\n";
-	result = chineseModExp(c,a,p,q);
-    std::cout << "chinese: " << result << "\n";
-	result = origMont(c,a,p,q);
-    std::cout << "origMont: " << result << "\n";
-    result = chinMont(c,a,p,q);
-    std::cout << "chinMont: " << result << "\n";
+	result2 = chineseModExp2(c,a,p,q);
+	result3 = origMont(c,a,p,q);
+	result4 = chinMont(c,a,p,q);
+	if(result == result2 && result2 == result3 && result3 == result4){
+		cout << "Answers all same: " << result << "\n";
+	}
+	else{
+		cout << "Answers not all same...\n";
+		cout << "original: " << result << "\n";
+		cout << "chinese2: " << result << "\n";
+		cout << "origMont: " << result << "\n";
+		cout << "chinMont: " << result << "\n";
+	}
 
 
-
-    if(argc != 2){
-    	
-    }
-
-    return 0;
+	return 0;
 }
 
 
