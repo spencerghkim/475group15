@@ -56,24 +56,38 @@ uberzahl chineseModExp(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	return m;
 }
 
+uberzahl montRed(uberzahl T, uberzahl R, uberzahl M){
+
+	uberzahl m = (T)*(R-(M.inverse(R))); //T*R^(-1) % n
+	if (m>=R){
+		uberzahl bitDiff = (m.bitLength()-R.bitLength());
+		uberzahl two = 2;
+		m = m & (two.exp(bitDiff)-1); //bitwise and with 2^(bitDiff)-1 1's
+	}
+	//std::cout << "m: " << m << "\n";
+	uberzahl t = (T + m*M)/R;
+
+	//std::cout << "t: " << t << "\n";
+	if (t >= M)
+		return(t-M);
+	//*************
+	return t;
+}
+
 uberzahl montMultiply(uberzahl a, uberzahl b, uberzahl R, uberzahl n){
 	uberzahl aBar = a*R % n;
 	uberzahl bBar = b*R % n;
+	uberzahl T = aBar * bBar;
 
-	//Montgomery Reduction**
-	uberzahl k = n.bitLength();
-	uberzahl m = (k*((aBar*bBar)%R)) % R;
-	uberzahl t = ((aBar*bBar) + m*(aBar*bBar))/R;
+	std::cout << "M: " << n << "\n";
+	std::cout << "R: " << R << "\n";
+	std::cout << "T: " << T << "\n";
+	std::cout << "M': " << n-(n.inverse(R)) << "\n";
 
-	if (t >= (aBar*bBar))
-		t = t-(aBar*bBar);
-	//*************
+	
+	uberzahl zBar = montRed(T,R,n);
 
-	uberzahl z = (t*R.inverse(n)) % n;
-
-
-	return (z); 
-
+	return zBar;	
 
 }
 
@@ -88,17 +102,16 @@ uberzahl origMont(uberzahl c, uberzahl a, uberzahl p, uberzahl q){
 	uberzahl two = 2;
 
 	uberzahl R = 2;
-	R = two.exp(n.bitLength()) % n;
+	R = two.exp(n.bitLength());
 	
 
 	for(unsigned int i = 0; i < numBits; i++){
-		z = (z*z) % n;
-
+		//z = z*z % n;
+		z = montMultiply(z,z,R,n);
 		currentBit = c.bit(numBits-i-1);
 
         if (currentBit == 1){
-            //z = (z*a) % n;
-			z = montMultiply(z,a,R,n) % n; 
+			z = montMultiply(z,a,R,n); 
         }
 
 	}
