@@ -20,7 +20,7 @@ using namespace std;
 mt19937 randGen;
 uniform_int_distribution<u64> uni_dist(0x0ull, KEYWORDMASK);
 
-//Generates a random key using a seed based on time to simulate probabilistic random key words
+//Generate a random key using a seed based on time to simulate probabilistic random key words
 void keyGenerator(vector<u64>& key){
     time_t timer;
     time(&timer);
