@@ -32,7 +32,9 @@ using namespace std;
 
 enum modes{ ENC, DEC };
 
-extern void keyGenerator(vector<u64>& key);
+
+mt19937 randGen;
+uniform_int_distribution<u64> uni_dist(0x0ull, KEYWORDMASK);
 
 class SpeckClass{
 private:
@@ -161,12 +163,29 @@ SpeckClass::SpeckClass(bool mode, int N, int t, vector<u64> pt, vector<u64> K){
 	y = y_orig;
 }
 
+
+//Generates a random key using a seed based on time to simulate probabilistic random key words
+void keyGenerator(vector<u64>& key){
+    time_t timer;
+    time(&timer);
+    randGen.seed(timer);
+    
+    for (int i = 0; i < MAXKEYWORDS; i++){
+        key.push_back(uni_dist(randGen) & KEYWORDMASK);
+    }
+    
+}
+
+
+
 int main(int argc, char** argv){
 	//pt = plaintext, K = key
     
 	vector<u64> pt, K;
 	pt.push_back(0x6c61766975716520);
 	pt.push_back(0x7469206564616d20);
+	//K.push_back(0x0f0e0d0c0b0a0908);
+	//K.push_back(0x0706050403020100);
     
     keyGenerator(K);
     
