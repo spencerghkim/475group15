@@ -3,24 +3,37 @@
 
 //Tasks
 //key generation - we should NOT use rand(). We need to find a 
-	//cryptographically random source like openSSL or crypto++
+//cryptographically random source like openSSL or crypto++
+//******Used timer to generate random key words?*******
 //encryption - done!
-//decryption - almost done
+//decryption - almost done, ****is this done now*****?
 
+//********NEED TO PAD PLAINTEXT MESSAGES********
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
 #include <x86intrin.h>
+#include <random>
+#include <time.h>
+#include <stdio.h>
+
+
 using namespace std;
+
+
 
 #define LCS _lrotl 							//left circular shift
 #define RCS _lrotr 							//right circular shift
-#define u64 unsigned long long
+#define u64 unsigned long long //******Want to change these to uberzahl?******
 #define MAXKEYWORDS 4
 #define MAXROUNDS 34
+#define KEYWORDMASK 0xFFFFFFFF
 
 enum modes{ ENC, DEC };
+
+mt19937 randGen;
+uniform_int_distribution<u64> uni_dist(0x0ull, KEYWORDMASK);
 
 class SpeckClass{
 private:
@@ -109,18 +122,18 @@ void SpeckClass::decryption(){
 void SpeckClass::printStuff(){
 	printf("orig key: \t0x");
 	for(int i=0; i<m-1; i++)
-		printf("%llx ", l[i]);
+		printf("%08llx ", l[i]);
 	printf("%llx\n", key[0]);
 
 
 	printf("plaintext: \t0x");
 	for(uint i=0; i<x_orig.size(); i++)
-		printf("%llx %llx ", x_orig[i], y_orig[i]);
+		printf("%016llx %016llx ", x_orig[i], y_orig[i]);
 	printf("\n");
 
 	printf("ciphertext: \t0x");
 	for(uint i=0; i<x.size(); i++)
-		printf("%llx %llx ", x[i], y[i]);
+		printf("%016llx %016llx ", x[i], y[i]);
 	printf("\n");
 	
 }
@@ -149,15 +162,32 @@ SpeckClass::SpeckClass(bool mode, int N, int t, vector<u64> pt, vector<u64> K){
 	y = y_orig;
 }
 
-int main(int argc, char** argv){
-	//pt = plaintext, K = key 
 
+//Generates a random key using a seed based on time to simulate probabilistic random key words
+void keyGenerator(vector<u64>& key){
+    time_t timer;
+    time(&timer);
+    randGen.seed(timer);
+    
+    for (int i = 0; i < MAXKEYWORDS; i++){
+        key.push_back(uni_dist(randGen) & KEYWORDMASK);
+    }
+    
+}
+
+
+
+int main(int argc, char** argv){
+	//pt = plaintext, K = key
+    
 	vector<u64> pt, K;
 	pt.push_back(0x6c61766975716520);
 	pt.push_back(0x7469206564616d20);
-	K.push_back(0x0f0e0d0c0b0a0908);
-	K.push_back(0x0706050403020100);
-
+	//K.push_back(0x0f0e0d0c0b0a0908);
+	//K.push_back(0x0706050403020100);
+    
+    keyGenerator(K);
+    
 	SpeckClass specky(ENC, 64, 32, pt, K);
 	specky.encryption();
 	specky.printStuff();
@@ -169,12 +199,13 @@ int main(int argc, char** argv){
 	}
 
 	//assume mode = 128/128
-	
+	/*
 	vector<u64> pt2, key2;
 	string word;
 	char ch[17];
 	char c;
 
+    
 	//read plaintext
 	while(cin.good()){
 		cin >> c;
@@ -203,6 +234,7 @@ int main(int argc, char** argv){
 	SpeckClass specky2(ENC, 64, 32, pt2, key2);
 	specky2.encryption();
 	specky2.printStuff();
+     */
 
 	return 0;
 }
