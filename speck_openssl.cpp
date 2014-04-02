@@ -30,7 +30,9 @@ using namespace std;
 #define u64 unsigned long long //******Want to change these to uberzahl?******
 #define MAXKEYWORDS 4
 #define MAXROUNDS 34
-#define KEYWORDMASK 0xFFFFFFFF
+
+#define CHOSENKEYWORDSIZE 4
+#define CORRESPONDINGROUNDS 34
 
 enum modes{ ENC, DEC };
 
@@ -200,7 +202,7 @@ void keyGenerator(vector<u64>& key){
 	
 
 	stringstream ss;
-	for(int i=0; i<4; i++){
+	for(int i=0; i<CHOSENKEYWORDSIZE; i++){
 		ss.str("");
 
 		result = RAND_bytes(buf, 8);
@@ -286,26 +288,24 @@ void createPlaintext(vector<u64>& pt){
 int main(int argc, char** argv){
     
 	vector<u64> pt, K;
-	// pt.push_back(0x6c61766975716520);
-	// pt.push_back(0x7469206564616d20);
+	// 6c617669757165207469206564616d20
 	// K.push_back(0x0f0e0d0c0b0a0908);
 	// K.push_back(0x0706050403020100);
 
 	createPlaintext(pt);
 
-    // keyGenerator(K);
+    keyGenerator(K);
 
 
-    // pt.push_back(0x65736f6874206e49);
-    // pt.push_back(0x202e72656e6f6f70);
-    K.push_back(0x1f1e1d1c1b1a1918);
-    K.push_back(0x1716151413121110);
-    K.push_back(0x0f0e0d0c0b0a0908);
-    K.push_back(0x0706050403020100);
+    // 65736f6874206e49202e72656e6f6f70
+    // K.push_back(0x1f1e1d1c1b1a1918);
+    // K.push_back(0x1716151413121110);
+    // K.push_back(0x0f0e0d0c0b0a0908);
+    // K.push_back(0x0706050403020100);
 
     
 
-	SpeckClass specky(ENC, 64, 34, pt, K);
+	SpeckClass specky(ENC, 64, CORRESPONDINGROUNDS, pt, K);
 	specky.encryption();
 	specky.printStuff();
 	specky.decryption();
