@@ -224,7 +224,7 @@ void keyGenerator(vector<u64>& key){
 }
 
 
-void createPlaintext(vector<u64>& pt){
+void createPlaintext(int mode, vector<u64>& pt){
 	//modifies empty vector
 	//uses cin; piped input file into cin
 
@@ -232,45 +232,47 @@ void createPlaintext(vector<u64>& pt){
 
 	string input;
 	cin >> input;
-	if(input.size() % 2){
-		string temp = "0";
-		temp += input;
-		input = temp;
-	}
-	int inputSize = input.size();
-
-	int messageLengthBytes = inputSize / 2;
-
-	//pad
-
-	if(messageLengthBytes % 16 == 0){
-		input += "1000000000000000";
-		stringstream ss;
-		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
-		input += ss.str();
-	}
-	else if (messageLengthBytes % 16 < 8){
-
-		input += "10";
-		while(input.size() % 16 != 0){
-			input += "00";
+	if(mode == ENC){
+		if(input.size() % 2){
+			string temp = "0";
+			temp += input;
+			input = temp;
 		}
+		int inputSize = input.size();
 
-		stringstream ss;
-		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
-		input += ss.str();
+		int messageLengthBytes = inputSize / 2;
 
-	}
-	else{
-		input += "10";
-		while(input.size() % 16 != 0){
-			input += "00";
+		//pad
+
+		if(messageLengthBytes % 16 == 0){
+			input += "1000000000000000";
+			stringstream ss;
+			ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+			input += ss.str();
 		}
-		input += "0000000000000000";
+		else if (messageLengthBytes % 16 < 8){
 
-		stringstream ss;
-		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
-		input += ss.str();
+			input += "10";
+			while(input.size() % 16 != 0){
+				input += "00";
+			}
+
+			stringstream ss;
+			ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+			input += ss.str();
+
+		}
+		else{
+			input += "10";
+			while(input.size() % 16 != 0){
+				input += "00";
+			}
+			input += "0000000000000000";
+
+			stringstream ss;
+			ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+			input += ss.str();
+		}
 	}
 
 	//read 128-bit parts of the plaintext
@@ -281,7 +283,11 @@ void createPlaintext(vector<u64>& pt){
 
 	}
 
-	cout << "input with padding:\n" << input << "\n";
+	if(mode == ENC)
+		cout << "input with padding:\n" << input << "\n";
+	else{
+		cout << "inputted ciphertext:\n" << input << "\n";
+	}
 
 }
 
@@ -292,7 +298,8 @@ int main(int argc, char** argv){
 	// K.push_back(0x0f0e0d0c0b0a0908);
 	// K.push_back(0x0706050403020100);
 
-	createPlaintext(pt);
+
+	createPlaintext(ENC, pt);
 
     keyGenerator(K);
 
