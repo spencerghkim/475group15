@@ -59,7 +59,7 @@ public:
 	vector<u64> x, y;						//ciphertext words (2)
 
 	void encryption();						//encrypts x_orig, y_orig into x,y
-	void decryption();
+	string decryption();
 	void changeMode(bool mode);
 	void printStuff();	
 	SpeckClass(bool mode, int N, int t, vector<u64> pt, vector<u64> K);
@@ -103,23 +103,55 @@ void SpeckClass::encryption(){
 		encrypt(i);
 }
 
-void SpeckClass::decryption(){
+string SpeckClass::decryption(){
 	if(Mode == ENC && !tableFilled) {
 		cerr << "Wrong mode; ENC was inputted\n";
-		return;
+		return "";
 	}
 	expandKey();
 	for(u64 i=0; i<T; i++)
 		decrypt(T-1-i);
 
-	printf("\nplaintext: \t0x");
-	for(uint i=0; i<x.size(); i++)
-		printf("%llx %llx ", x[i], y[i]);
-	printf("\n");
+	stringstream plaintext;
+
+	u64 messageLengthBytes = y.back();
+	int count = 0;
+
+	while(messageLengthBytes >= 16){
+		// cout << "bytes: " << messageLengthBytes << "\n";
+		plaintext << hex << setw(16) << setfill('0') << x[count];
+		plaintext << hex << setw(16) << setfill('0') << y[count];
+		count++;
+		messageLengthBytes -= 16;
+	}
+
+	if(messageLengthBytes==0);
+	else if(messageLengthBytes <= 8){
+
+		int width = messageLengthBytes*2;
+
+		plaintext << hex << setw(width) << setfill('0') << ((x[count] >> 4*(16-width)));
+	}
+	else{
+
+		plaintext << hex << setw(16) << setfill('0') << x[count];
+		messageLengthBytes -= 8;
+		int width = messageLengthBytes*2;
+		plaintext << hex << setw(width) << setfill('0') << ((y[count] >> 4*(16-width)));
+	}
+
+	cout << "output without padding:\n" << plaintext.str() << "\n";
+
+	return plaintext.str();
+
+	// printf("\nplaintext: \t0x");
+	// for(uint i=0; i<x.size(); i++)
+	// 	printf("%016llx %016llx ", x[i], y[i]);
+	// printf("\n");
 }
 
 void SpeckClass::printStuff(){
-	printf("orig key: \t0x");
+	printf("key: \t\t0x");
 	for(int i=0; i<m-1; i++)
 		printf("%016llx ", l[i]);
 	printf("%016llx\n", key[0]);
@@ -144,7 +176,7 @@ SpeckClass::SpeckClass(bool mode, int N, int t, vector<u64> pt, vector<u64> K){
 	if(n == 16) alpha=7, beta=2;
 
 	for(int i=0; i<m-1; i++)
-		l[i] = K[i];
+		l[(m-2)-i] = K[i];
 	key[0] = K[m-1];
 
 	Mode = mode;
@@ -168,7 +200,7 @@ void keyGenerator(vector<u64>& key){
 	
 
 	stringstream ss;
-	for(int i=0; i<2; i++){
+	for(int i=0; i<4; i++){
 		ss.str("");
 
 		result = RAND_bytes(buf, 8);
@@ -189,57 +221,91 @@ void keyGenerator(vector<u64>& key){
 
 }
 
-int main(int argc, char** argv){
-	
-	//test openssl rand_bytes
 
-	/*int hue;
-	unsigned char buf[8];
-	hue = RAND_bytes(buf, 8);
-	for(int i=0; i<8; i++){
-		// printf("%02x ", buf[i]);
-		cout << hex << setw(2) << setfill('0') << (int) buf[i] << " ";
+void createPlaintext(vector<u64>& pt){
+	//modifies empty vector
+	//uses cin; piped input file into cin
+
+	string word;
+
+	string input;
+	cin >> input;
+	if(input.size() % 2){
+		string temp = "0";
+		temp += input;
+		input = temp;
 	}
-	cout << "\n";
-	if(hue) cout << "success!\n";
-	else cout << "failure\n";
-	cout << "\n\n";*/
+	int inputSize = input.size();
 
-	//pt = plaintext, K = key
+	int messageLengthBytes = inputSize / 2;
+
+	//pad
+
+	if(messageLengthBytes % 16 == 0){
+		input += "1000000000000000";
+		stringstream ss;
+		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+		input += ss.str();
+	}
+	else if (messageLengthBytes % 16 < 8){
+
+		input += "10";
+		while(input.size() % 16 != 0){
+			input += "00";
+		}
+
+		stringstream ss;
+		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+		input += ss.str();
+
+	}
+	else{
+		input += "10";
+		while(input.size() % 16 != 0){
+			input += "00";
+		}
+		input += "0000000000000000";
+
+		stringstream ss;
+		ss << hex << setw(16) << setfill('0') << messageLengthBytes;
+		input += ss.str();
+	}
+
+	//read 128-bit parts of the plaintext
+	for(uint i=0; i<input.size()/16; i++){
+			word = "0x";		
+			word += input.substr(i*16, 16);
+			pt.push_back(stoull(word.c_str(), 0, 0));
+
+	}
+
+	cout << "input with padding:\n" << input << "\n";
+
+}
+
+int main(int argc, char** argv){
     
 	vector<u64> pt, K;
-	pt.push_back(0x6c61766975716520);
-	pt.push_back(0x7469206564616d20);
+	// pt.push_back(0x6c61766975716520);
+	// pt.push_back(0x7469206564616d20);
 	// K.push_back(0x0f0e0d0c0b0a0908);
 	// K.push_back(0x0706050403020100);
 
-    keyGenerator(K);
+	createPlaintext(pt);
 
-    //generate a key
+    // keyGenerator(K);
 
-	/*stringstream ss;
-	for(int i=0; i<2; i++){
-		ss.str("");
 
-		hue = RAND_bytes(buf, 8);
-		
-		if(hue){ //good
-			ss << "0x";
-			for(int k=0; k<8; k++)
-				ss << hex << setw(2) << setfill('0') << (int) buf[k];
-			// cout << ss.str() << "\n";
-			// printf("%016llx\n", stoull(ss.str().c_str(), 0, 0));
+    // pt.push_back(0x65736f6874206e49);
+    // pt.push_back(0x202e72656e6f6f70);
+    K.push_back(0x1f1e1d1c1b1a1918);
+    K.push_back(0x1716151413121110);
+    K.push_back(0x0f0e0d0c0b0a0908);
+    K.push_back(0x0706050403020100);
 
-			K.push_back(stoull(ss.str().c_str(), 0, 0));
-
-		}
-		else{ //bad
-			i--;
-		}
-
-	}*/
     
-	SpeckClass specky(ENC, 64, 32, pt, K);
+
+	SpeckClass specky(ENC, 64, 34, pt, K);
 	specky.encryption();
 	specky.printStuff();
 	specky.decryption();
@@ -249,43 +315,6 @@ int main(int argc, char** argv){
 		return 0;
 	}
 
-	//assume mode = 128/128
-	/*
-	vector<u64> pt2, key2;
-	string word;
-	char ch[17];
-	char c;
-
-    
-	//read plaintext
-	while(cin.good()){
-		cin >> c;
-		if(c == 'K') break;
-		cin.unget();
-		cin.get(ch, 17);
-		
-		word = "0x";
-		word += ch;
-		// printf("%llx\n", stoull(word.c_str(), 0, 0));
-		pt2.push_back(stoull(word.c_str(), 0, 0));
-	}
-
-	//read key
-	string hue;
-	getline(cin, hue);
-	while(cin.good()){
-		cin.get(ch, 17);
-		word = "0x";
-		word += ch;
-		// printf("%llx\n", stoull(word.c_str(), 0, 0));
-		key2.push_back(stoull(word.c_str(), 0, 0));
-	}
-
-
-	SpeckClass specky2(ENC, 64, 32, pt2, key2);
-	specky2.encryption();
-	specky2.printStuff();
-     */
 
 	return 0;
 }
