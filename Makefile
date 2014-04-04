@@ -11,7 +11,7 @@ OFILES = ProcessData.o pager.o vm_pager.o
 HEADERS = pager.h ProcessData.h VirtualPage.h vm_pager.h 
 TESTHEADERS = libvm_app.a -ldl
 
-all: speck_openssl 
+all: speck_openssl perfTest
 #all: main2
 
 debug: FLAGS += -g
@@ -28,6 +28,10 @@ exampleSpeck: exampleSpeck.cpp
 
 speck_openssl: speck_openssl.cpp uberzahl.h uberzahl.cpp
 	g++ $(FLAGS) uberzahl.cpp speck_openssl.cpp -o speck_openssl.out /usr/lib64/libcrypto.so
+
+perfTest: perfTest.cpp 
+	g++ $(FLAGS) perfTest.cpp -o perfTest.out
+
 
 clean:
 	rm -f *.o *.out core.*
