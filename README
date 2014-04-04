@@ -1,1 +1,17 @@
-Hello
+Speck 128/256
+Alex Athan, Spencer Kim, Martin Dureja, Daniel Sofferman
+AAthans, SpegKim, MartinDu, DSoff
+
+Run function createPlaintext with the following format:
+createPlaintext(ENC/DEC, empty vector)
+
+To input the plaintext or ciphertext, pipe it into cin using the terminal with a text file.
+The plaintext/ciphertext should be in hex.
+
+Run function keyGenerator with an empty vector passed in to generate a 256-bit key
+
+Call the speckClass constructor in the following format:
+speckClass specky(Encryption/Decryption, WORDSIZE (64), # rounds (CORRESPONDING ROUNDS = 34), plaintext/ciphertext vector, key vector)
+
+where Encryption would be passed in plaintext and Decryption passed in ciphertext
+

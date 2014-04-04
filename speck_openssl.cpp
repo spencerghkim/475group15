@@ -19,6 +19,8 @@
 #include <vector>
 #include <x86intrin.h>
 #include <stdio.h>
+#include <chrono>
+
 
 #include <openssl/rand.h>
 
@@ -31,8 +33,10 @@ using namespace std;
 #define MAXKEYWORDS 4
 #define MAXROUNDS 34
 
-#define CHOSENKEYWORDSIZE 4
-#define CORRESPONDINGROUNDS 34
+//Speck 128/256
+#define CHOSENKEYWORDSIZE 4 
+#define CORRESPONDINGROUNDS 34 
+#define WORDSIZE 64
 
 enum modes{ ENC, DEC };
 
@@ -63,7 +67,7 @@ public:
 	void encryption();						//encrypts x_orig, y_orig into x,y
 	string decryption();
 	void changeMode(bool mode);
-	void printStuff();	
+	void printStuff(bool mode);	
 	SpeckClass(bool mode, int N, int t, vector<u64> pt, vector<u64> K);
 };
 
@@ -73,7 +77,7 @@ void SpeckClass::expandKey(){
 	
 	for(u64 i=0; i<T-1; i++){
 		int index = i+m-1;
-		l[index] = (RCS(l[i], alpha) + key[i]) ^ i;
+		l[index] = (RCS(l[i], alpha) + key[i])  ^ i;
 		key[i+1] = LCS(key[i], beta) ^ l[index];
 	}
 
@@ -81,10 +85,12 @@ void SpeckClass::expandKey(){
 }
 
 void SpeckClass::encrypt(u64 round){
+
 	for(uint i=0; i<x.size(); i++){
 		x[i] = (RCS(x[i], alpha) + y[i]) ^ key[round];
 		y[i] = LCS(y[i], beta) ^ x[i];
 	}
+
 }
 
 void SpeckClass::decrypt(u64 round){
@@ -100,9 +106,16 @@ void SpeckClass::encryption(){
 		cerr << "Wrong mode; DEC was inputted\n";
 		return;
 	}
+	auto start = chrono::steady_clock::now();
+
 	expandKey();
 	for(u64 i=0; i<T; i++)
 		encrypt(i);
+
+	auto current = chrono::steady_clock::now();
+	auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
+	double chrono_time = elapsed.count();
+	cerr << "\tEncryption time: " << chrono_time << "\n";
 }
 
 string SpeckClass::decryption(){
@@ -110,6 +123,8 @@ string SpeckClass::decryption(){
 		cerr << "Wrong mode; ENC was inputted\n";
 		return "";
 	}
+	auto start = chrono::steady_clock::now();
+
 	expandKey();
 	for(u64 i=0; i<T; i++)
 		decrypt(T-1-i);
@@ -142,7 +157,13 @@ string SpeckClass::decryption(){
 		plaintext << hex << setw(width) << setfill('0') << ((y[count] >> 4*(16-width)));
 	}
 
-	cout << "output without padding:\n" << plaintext.str() << "\n";
+	auto current = chrono::steady_clock::now();
+	auto elapsed = chrono::duration_cast<chrono::duration<double>>(current-start);
+	double chrono_time = elapsed.count();
+	cerr << "\tDecryption time: " << chrono_time << "\n";
+
+	//Test plaintext padding output
+	//cout << "output without padding:\n" << plaintext.str() << "\n";
 
 	return plaintext.str();
 
@@ -152,19 +173,28 @@ string SpeckClass::decryption(){
 	// printf("\n");
 }
 
-void SpeckClass::printStuff(){
+void SpeckClass::printStuff(bool mode){
 	printf("key: \t\t0x");
 	for(int i=0; i<m-1; i++)
 		printf("%016llx ", l[i]);
 	printf("%016llx\n", key[0]);
 
-
-	printf("plaintext: \t0x");
+	if(mode == ENC){
+		printf("plaintext: \t0x");
+	} else {
+		printf("ciphertext: \t0x");
+	}
+	
 	for(uint i=0; i<x_orig.size(); i++)
 		printf("%016llx %016llx ", x_orig[i], y_orig[i]);
 	printf("\n");
 
-	printf("ciphertext: \t0x");
+	if(mode == ENC){
+		printf("ciphertext: \t0x");
+	} else {
+		printf("plaintext: \t0x");
+	}
+
 	for(uint i=0; i<x.size(); i++)
 		printf("%016llx %016llx ", x[i], y[i]);
 	printf("\n");
@@ -283,17 +313,21 @@ void createPlaintext(int mode, vector<u64>& pt){
 
 	}
 
+	/*
+	//Test output
 	if(mode == ENC)
 		cout << "input with padding:\n" << input << "\n";
 	else{
 		cout << "inputted ciphertext:\n" << input << "\n";
 	}
+	*/
 
 }
 
 int main(int argc, char** argv){
     
 	vector<u64> pt, K;
+	//Speck 128/128 test vector
 	// 6c617669757165207469206564616d20
 	// K.push_back(0x0f0e0d0c0b0a0908);
 	// K.push_back(0x0706050403020100);
@@ -303,18 +337,19 @@ int main(int argc, char** argv){
 
     keyGenerator(K);
 
-
-    // 65736f6874206e49202e72656e6f6f70
-    // K.push_back(0x1f1e1d1c1b1a1918);
-    // K.push_back(0x1716151413121110);
-    // K.push_back(0x0f0e0d0c0b0a0908);
-    // K.push_back(0x0706050403020100);
+    //Speck 128/256 test vector
+     //65736f6874206e49202e72656e6f6f70
+     //K.push_back(0xAAAAAAAAAAAAAAAA);
+     //K.push_back(0xAAAAAAAAAAAAAAAA);
+     //K.push_back(0xAAAAAAAAAAAAAAAA);
+     //K.push_back(0xAAAAAAAAAAAAAAAA);
 
     
-
-	SpeckClass specky(ENC, 64, CORRESPONDINGROUNDS, pt, K);
+    //specky(encryption/decryption, word size, # rounds, plaintext vector, key)
+	SpeckClass specky(ENC, WORDSIZE, CORRESPONDINGROUNDS, pt, K);
 	specky.encryption();
-	specky.printStuff();
+	//Test output
+	specky.printStuff(ENC);
 	specky.decryption();
 
 	if(argc > 1 && argv[1][1] == 'h'){
