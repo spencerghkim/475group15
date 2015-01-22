@@ -1,5 +1,5 @@
 //Speck encryption algorithm with 128 bit key and plaintext
-//EECS 475 group 15 - Anonymous
+//EECS 475 group 15 - Spencer Kim, Alex Athan, Martin Dureja, Daniel Sofferman
 
 #include <iostream>
 #include <iomanip>

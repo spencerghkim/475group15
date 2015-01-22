@@ -16,6 +16,7 @@ speckClass specky(Encryption(ENC)/Decryption(DEC), WORDSIZE (64), # rounds (CORR
 where Encryption would be passed in plaintext and Decryption passed in ciphertext
 
 
+REQUIRES: OpenSSL; works with version 1.0.1e
 
 Example:
 
